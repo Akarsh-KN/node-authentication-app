@@ -7,8 +7,9 @@ const ejs = require("ejs");
 const mongoose = require("mongoose");
 const encrypt = require('mongoose-encryption');
 const sha256 = require("sha256");
+const bcrypt = require("bcrypt");
+const saltRounds = 10;
 
-// SHA256 hasing implemneted implented
 
 const app = express();
 
@@ -70,12 +71,16 @@ app.post("/login", async function(req,res){
         }
         else{
             if (foundUser[0].email){
-                if (foundUser[0].password == sha256(req.body.password)){
-                    res.render("secrets");
-                }
-                else{
-                    console.log("the password entered is wrong");
-                }
+                
+                bcrypt.compare(req.body.password, foundUser[0].password, function(err, result) {
+
+                    if (result == true){
+                        res.render("secrets");
+                    }
+                    else{
+                        console.log("the password entered is wrong");
+                    }
+                });
             }
             else{
                 console.log("The user email is wrong");
@@ -101,27 +106,36 @@ app.get("/register", function(req, res){
 
 app.post("/register", async function(req, res){
     try{
-        const newUser = new User({
-            email : req.body.username,
-            password: sha256(req.body.password)
-        });
+        bcrypt.hash(req.body.password, saltRounds, async function(err, hash) {
 
-        const doc = await User.find({"email": req.body.username}).exec();
-
-        if (doc[0] == null){
-
-        newUser.save().then(() => {
-            console.log("User created successfully")
-            res.render("secrets");
-            }).catch((err) => {
+            if (err) {
                 console.log(err);
-            });
-        }
-        else{
-            console.log(doc);
-            console.log("the user already exist");
-            res.render("home");
-        };
+            }
+            else{
+                const newUser = new User({
+                    email : req.body.username,
+                    password: hash
+                });
+    
+                const doc = await User.find({"email": req.body.username}).exec();
+    
+                if (doc[0] == null){
+    
+                    newUser.save().then(() => {
+                        console.log("User created successfully")
+                        res.render("secrets");
+                        }).catch((err) => {
+                            console.log(err);
+                        });
+                    }
+                    else{
+                        console.log(doc);
+                        console.log("the user already exist");
+                        res.render("home");
+                    };
+            };
+            
+        });    
     }
     catch (err){
         console.log(err.stack);
