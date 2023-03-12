@@ -6,6 +6,7 @@ const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const mongoose = require("mongoose");
 const encrypt = require('mongoose-encryption');
+const sha256 = require("sha256");
 
 const app = express();
 
@@ -38,12 +39,11 @@ const userSchema = new mongoose.Schema ({
 
 
 // Line responsible for encrypting the passwords.
+// userSchema.plugin(encrypt, { secret: process.env.SECRET, encryptedFields: ["password"]});
 
-userSchema.plugin(encrypt, { secret: process.env.SECRET, encryptedFields: ["password"]});
+
 
 const User = new mongoose.model("User", userSchema);
-
-// console.log(mongoose.connection);
 
 
 app.get("/home", function(req, res){
@@ -68,7 +68,7 @@ app.post("/login", async function(req,res){
         }
         else{
             if (foundUser[0].email){
-                if (foundUser[0].password == req.body.password){
+                if (foundUser[0].password == sha256(req.body.password)){
                     res.render("secrets");
                 }
                 else{
@@ -101,7 +101,7 @@ app.post("/register", async function(req, res){
     try{
         const newUser = new User({
             email : req.body.username,
-            password: req.body.password
+            password: sha256(req.body.password)
         });
 
         const doc = await User.find({"email": req.body.username}).exec();
