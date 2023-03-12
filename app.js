@@ -8,6 +8,8 @@ const mongoose = require("mongoose");
 const encrypt = require('mongoose-encryption');
 const sha256 = require("sha256");
 
+// SHA256 hasing implemneted implented
+
 const app = express();
 
 app.use(express.static("public"));
